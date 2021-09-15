@@ -38,7 +38,7 @@ def get_pokemon_by_name(pokemon_name: str = Path(None,
                                                              "pokemon you'd "
                                                              "like to "
                                                              "retrieve")):
-    pokemon = get_poke_by_name(pokemon_name)
+    pokemon = get_poke_by_name(pokemon_name.capitalize())
     if not pokemon:
         return JSONResponse({'message': 'Pokemon Not Found'},
                             status_code=HTTP_404_NOT_FOUND)
@@ -59,7 +59,7 @@ def get_pokemon_by_type(poke_type: str = Path(None,
                                                           "the pokemons you "
                                                           "want to query"),
                         type2: Optional[str] = None):
-    pokemons = get_poke_by_type(poke_type, type2)
+    pokemons = get_poke_by_type(poke_type.capitalize(), type2.capitalize())
     if not pokemons:
         return JSONResponse({'message': 'Pokemon Not Found'},
                             status_code=HTTP_404_NOT_FOUND)
@@ -79,7 +79,7 @@ def get_pokemon_by_type(poke_type: str = Path(None,
 
 @app.post("/newPoke/{pokemon_name}")
 def create_pokemon(pokemon_name: str, pokemon: Pokemon):
-    if get_poke_by_name(pokemon_name):
+    if get_poke_by_name(pokemon_name.capitalize()):
         return JSONResponse({'message': 'Pokemon Already Exists'},
                             status_code=HTTP_409_CONFLICT)
 
@@ -95,7 +95,7 @@ def create_pokemon(pokemon_name: str, pokemon: Pokemon):
 
 @app.put("/updatePoke/{pokemon_name}")
 def update_pokemon(pokemon_name: str, pokemon: Pokemon):
-    if not get_poke_by_name(pokemon_name):
+    if not get_poke_by_name(pokemon_name.capitalize()):
         return JSONResponse({'message': 'Pokemon Not Found'},
                             status_code=HTTP_404_NOT_FOUND)
 
@@ -111,11 +111,11 @@ def update_pokemon(pokemon_name: str, pokemon: Pokemon):
 
 @app.delete("/deletePoke/{pokemon_name}")
 def delete_pokemon(pokemon_name: str):
-    if not get_poke_by_name(pokemon_name):
+    if not get_poke_by_name(pokemon_name.capitalize()):
         return JSONResponse({'message': 'Pokemon Not Found'},
                             status_code=HTTP_404_NOT_FOUND)
 
-    delete_poke(pokemon_name)
+    delete_poke(pokemon_name.capitalize())
 
     return JSONResponse({'message': 'Pokemon Deleted Successfully'},
                         status_code=status.HTTP_200_OK)

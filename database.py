@@ -74,9 +74,9 @@ def get_poke_by_type(type1: str, type2: str = None) -> list:
         return cursor.fetchall()
 
 
-def add_poke_to_db(name: str, type1: str, type2: str, sum_stats: str, hp: str,
-                   attack: str, special_attack: str, defense: str,
-                   special_defense: str) -> None:
+def add_poke_to_db(name: str, type1: str, type2: str, sum_stats: int, hp: int,
+                   attack: int, special_attack: int, defense: int,
+                   special_defense: int) -> None:
     with PokeDatabase(DB_FILENAME) as cursor:
         cursor.execute('''
         INSERT INTO Pokemons ('name', 'type1', 'type2', 'sum_stats',
@@ -87,9 +87,9 @@ def add_poke_to_db(name: str, type1: str, type2: str, sum_stats: str, hp: str,
 
 
 def update_poke(name: str, type1: str = None, type2: str = None,
-                sum_stats: str = None, hp: str = None, attack: str = None,
-                special_attack: str = None, defense: str = None,
-                special_defense: str = None) -> None:
+                sum_stats: int = None, hp: int = None, attack: int = None,
+                special_attack: int = None, defense: int = None,
+                special_defense: int = None) -> None:
     with PokeDatabase(DB_FILENAME) as cursor:
         params = [type1, type2, sum_stats, hp, attack, special_attack,
                   defense, special_defense]

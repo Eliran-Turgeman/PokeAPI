@@ -28,7 +28,9 @@ def load_csv_to_db() -> None:
                    inplace=True)
 
     poke_data.columns = COLUMNS
-
+    poke_data['name'] = poke_data['name'].str.lower()
+    poke_data['type1'] = poke_data['type1'].str.lower()
+    poke_data['type2'] = poke_data['type2'].str.lower()
     poke_data.to_sql('Pokemons', conn, if_exists='append', index=False)
 
 

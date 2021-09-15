@@ -6,8 +6,8 @@ DB_FILENAME = "poke_db.db"
 
 
 def table_exists(cursor):
-    cursor.execute('''
-        SELECT count(name) FROM sqlite_master WHERE type='table' AND name='Pokemons' ''')
+    cursor.execute('''SELECT count(name) FROM sqlite_master WHERE 
+    type='table' AND name='Pokemons' ''')
 
     if not cursor.fetchone()[0]:
         return False

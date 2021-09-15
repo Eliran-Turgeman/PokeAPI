@@ -2,7 +2,12 @@ from typing import Optional
 
 from fastapi import FastAPI, Path, HTTPException, status
 from pydantic import BaseModel
-
+from fastapi.responses import JSONResponse
+from starlette.status import (
+    HTTP_200_OK,
+    HTTP_404_NOT_FOUND,
+    HTTP_409_CONFLICT
+)
 from database import get_poke_by_name, get_poke_by_type, add_poke_to_db, \
     update_poke, delete_poke
 
@@ -23,8 +28,8 @@ class Pokemon(BaseModel):
 
 @app.get("/")
 def root():
-    raise HTTPException(status_code=status.HTTP_200_OK,
-                        detail="Welcome to PokeAPI")
+    return JSONResponse({'message': "Welcome to FastAPI"},
+                        status_code=HTTP_200_OK)
 
 
 @app.get("/poke/{pokemon_name}")
@@ -35,8 +40,8 @@ def get_pokemon_by_name(pokemon_name: str = Path(None,
                                                              "retrieve")):
     pokemon = get_poke_by_name(pokemon_name)
     if not pokemon:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Pokemon not found")
+        return JSONResponse({'message': 'Pokemon Not Found'},
+                            status_code=HTTP_404_NOT_FOUND)
 
     return {"Pokemon": pokemon[0],
             "Types": [pokemon[1], pokemon[2]],
@@ -56,8 +61,8 @@ def get_pokemon_by_type(poke_type: str = Path(None,
                         type2: Optional[str] = None):
     pokemons = get_poke_by_type(poke_type, type2)
     if not pokemons:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="No pokemon with this type")
+        return JSONResponse({'message': 'Pokemon Not Found'},
+                            status_code=HTTP_404_NOT_FOUND)
     result = {}
     for idx, pokemon in enumerate(pokemons):
         result[idx] = {"Pokemon": pokemon[0],
@@ -75,22 +80,24 @@ def get_pokemon_by_type(poke_type: str = Path(None,
 @app.post("/newPoke/{pokemon_name}")
 def create_pokemon(pokemon_name: str, pokemon: Pokemon):
     if get_poke_by_name(pokemon_name):
-        raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                            detail="Pokemon already exists")
+        return JSONResponse({'message': 'Pokemon Already Exists'},
+                            status_code=HTTP_409_CONFLICT)
+
     add_poke_to_db(pokemon.name, pokemon.primary_type, pokemon.secondary_type,
                    pokemon.sum_stats, pokemon.hit_points,
                    pokemon.attack_strength, pokemon.special_attack_strength,
                    pokemon.defensive_strength,
                    pokemon.special_defensive_strength)
-    raise HTTPException(status_code=status.HTTP_201_CREATED,
-                        detail="Pokemon created successfully")
+
+    return JSONResponse({'message': 'Pokemon Created Successfully'},
+                        status_code=status.HTTP_201_CREATED)
 
 
 @app.put("/updatePoke/{pokemon_name}")
 def update_pokemon(pokemon_name: str, pokemon: Pokemon):
     if not get_poke_by_name(pokemon_name):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Pokemon not found")
+        return JSONResponse({'message': 'Pokemon Not Found'},
+                            status_code=HTTP_404_NOT_FOUND)
 
     update_poke(pokemon.name, pokemon.primary_type, pokemon.secondary_type,
                 pokemon.sum_stats, pokemon.hit_points,
@@ -98,17 +105,17 @@ def update_pokemon(pokemon_name: str, pokemon: Pokemon):
                 pokemon.defensive_strength,
                 pokemon.special_defensive_strength)
 
-    raise HTTPException(status_code=status.HTTP_200_OK,
-                        detail="Pokemon details updated")
+    return JSONResponse({'message': 'Pokemon Details Updated'},
+                        status_code=status.HTTP_200_OK)
 
 
 @app.delete("/deletePoke/{pokemon_name}")
 def delete_pokemon(pokemon_name: str):
     if not get_poke_by_name(pokemon_name):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail="Pokemon not found")
+        return JSONResponse({'message': 'Pokemon Not Found'},
+                            status_code=HTTP_404_NOT_FOUND)
 
     delete_poke(pokemon_name)
 
-    raise HTTPException(status_code=status.HTTP_200_OK,
-                        detail="Pokemon deleted successfully")
+    return JSONResponse({'message': 'Pokemon Deleted Successfully'},
+                        status_code=status.HTTP_200_OK)

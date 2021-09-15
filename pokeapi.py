@@ -28,7 +28,7 @@ class Pokemon(BaseModel):
 
 @app.get("/")
 def root():
-    return JSONResponse({'message': "Welcome to FastAPI"},
+    return JSONResponse({'message': "Welcome to PokeAPI"},
                         status_code=HTTP_200_OK)
 
 

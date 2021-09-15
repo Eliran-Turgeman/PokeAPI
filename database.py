@@ -5,22 +5,39 @@ import pandas as pd
 DB_FILENAME = "poke_db.db"
 
 
-def table_exists(cursor):
-    cursor.execute('''SELECT count(name) FROM sqlite_master WHERE 
-    type='table' AND name='Pokemons' ''')
+class PokeDatabase:
+    def __init__(self, file=DB_FILENAME):
+        self.file = file
+        init_db(self.file)
+        load_csv_to_db()
 
-    if not cursor.fetchone()[0]:
-        return False
+    def __enter__(self):
+        self.conn = sqlite3.connect(self.file)
+        self.conn.row_factory = sqlite3.Row
+        self.cursor = self.conn.cursor()
+        return self.cursor
 
-    return True
+    def __exit__(self, type, value, traceback):
+        self.conn.commit()
+        self.conn.close()
 
 
-def init_db():
-    if not Path(DB_FILENAME).is_file():
-        Path(DB_FILENAME).touch()
+# def table_exists(cursor):
+#     cursor.execute('''SELECT count(name) FROM sqlite_master WHERE
+#     type='table' AND name='Pokemons' ''')
+#
+#     if not cursor.fetchone()[0]:
+#         return False
+#
+#     return True
 
 
-def load_csv_to_db():
+def init_db(filename: str = DB_FILENAME) -> None:
+    if not Path(filename).is_file():
+        Path(filename).touch()
+
+
+def load_csv_to_db() -> None:
     init_db()
     conn = sqlite3.connect(DB_FILENAME)
     cursor = conn.cursor()
@@ -31,7 +48,8 @@ def load_csv_to_db():
         ''')
 
     poke_data = pd.read_csv('Pokemon.csv')
-    poke_data.drop(['#', 'Speed', 'Generation', 'Legendary'], axis=1, inplace=True)
+    poke_data.drop(['#', 'Speed', 'Generation', 'Legendary'], axis=1,
+                   inplace=True)
 
     poke_data.columns = ['name', 'type1', 'type2', 'sum_stats',
                          'hp', 'attack', 'special_attack', 'defense',
@@ -40,88 +58,63 @@ def load_csv_to_db():
     poke_data.to_sql('Pokemons', conn, if_exists='append', index=False)
 
 
-def get_poke_by_name(poke_name):
-    conn = sqlite3.connect(DB_FILENAME)
-    cursor = conn.cursor()
-
-    if not table_exists(cursor):
-        load_csv_to_db()
-
-    cursor.execute('''SELECT * FROM Pokemons WHERE name = ?''', (poke_name,))
-    return cursor.fetchone()
+def get_poke_by_name(poke_name: str) -> dict:
+    with PokeDatabase(DB_FILENAME) as cursor:
+        cursor.execute('''SELECT * FROM Pokemons WHERE name = ?''',
+                       (poke_name,))
+        return cursor.fetchone()
 
 
-def get_poke_by_type(type1, type2):
-    conn = sqlite3.connect(DB_FILENAME)
-    cursor = conn.cursor()
+def get_poke_by_type(type1: str, type2: str = None) -> list:
+    with PokeDatabase(DB_FILENAME) as cursor:
+        if type2:
+            cursor.execute('''
+            SELECT * FROM Pokemons WHERE type1 = ? AND type2 = ?''',
+                           (type1, type2))
 
-    if not table_exists(cursor):
-        load_csv_to_db()
+        else:
+            cursor.execute('''
+            SELECT * FROM Pokemons WHERE type1 = ?''', (type1,))
 
-    if type2:
+        return cursor.fetchall()
+
+
+def add_poke_to_db(name: str, type1: str, type2: str, sum_stats: str, hp: str,
+                   attack: str, special_attack: str, defense: str,
+                   special_defense: str) -> None:
+
+    with PokeDatabase(DB_FILENAME) as cursor:
         cursor.execute('''
-        SELECT * FROM Pokemons WHERE type1 = ? AND type2 = ?''', (type1, type2))
+        INSERT INTO Pokemons ('name', 'type1', 'type2', 'sum_stats',
+        'hp', 'attack', 'special_attack', 'defense', 'special_defense')
+        VALUES (?,?,?,?,?,?,?,?,?)''', (name, type1, type2, sum_stats,
+                                        hp, attack, special_attack, defense,
+                                        special_defense))
 
-    else:
+
+def update_poke(name: str, type1: str = None, type2: str = None,
+                sum_stats: str = None, hp: str = None, attack: str = None,
+                special_attack: str = None, defense: str = None,
+                special_defense: str = None) -> None:
+
+    with PokeDatabase(DB_FILENAME) as cursor:
+        params = [type1, type2, sum_stats, hp, attack, special_attack,
+                  defense, special_defense]
+        params_names = ['type1', 'type2', 'sum_stats', 'hp', 'attack',
+                        'special_attack', 'defense', 'special_defense']
+
+        for param, param_name in zip(params, params_names):
+            if param:
+                query = '''
+                UPDATE Pokemons SET ''' + param_name + '''
+                 = ? WHERE name = ?'''
+                cursor.execute(query, (param, name))
+
+
+def delete_poke(name: str) -> None:
+    with PokeDatabase(DB_FILENAME) as cursor:
         cursor.execute('''
-        SELECT * FROM Pokemons WHERE type1 = ?''', (type1,))
-
-    return cursor.fetchall()
-
-
-def add_poke_to_db(name, type1, type2, sum_stats, hp, attack, special_attack,
-                   defense, special_defense):
-    conn = sqlite3.connect(DB_FILENAME)
-    cursor = conn.cursor()
-
-    if not table_exists(cursor):
-        load_csv_to_db()
-
-    cursor.execute('''
-    INSERT INTO Pokemons ('name', 'type1', 'type2', 'sum_stats',
-    'hp', 'attack', 'special_attack', 'defense', 'special_defense')
-    VALUES (?,?,?,?,?,?,?,?,?)''', (name, type1, type2, sum_stats, hp, attack,
-                                    special_attack, defense, special_defense))
-
-    conn.commit()
-
-
-def update_poke(name, type1=None, type2=None, sum_stats=None, hp=None,
-                attack=None, special_attack=None, defense=None,
-                special_defense=None):
-
-    conn = sqlite3.connect(DB_FILENAME)
-    cursor = conn.cursor()
-
-    if not table_exists(cursor):
-        load_csv_to_db()
-
-    params = [type1, type2, sum_stats, hp, attack, special_attack,
-              defense, special_defense]
-    params_names = ['type1', 'type2', 'sum_stats', 'hp', 'attack',
-                    'special_attack', 'defense', 'special_defense']
-
-    for param, param_name in zip(params, params_names):
-        if param:
-            query = '''
-            UPDATE Pokemons SET ''' + param_name + '''
-             = ? WHERE name = ?'''
-            cursor.execute(query, (param, name))
-
-    conn.commit()
-
-
-def delete_poke(name):
-    conn = sqlite3.connect(DB_FILENAME)
-    cursor = conn.cursor()
-
-    if not table_exists(cursor):
-        load_csv_to_db()
-
-    cursor.execute('''
-    DELETE FROM Pokemons WHERE name = ?''', (name,))
-
-    conn.commit()
+        DELETE FROM Pokemons WHERE name = ?''', (name,))
 
 
 

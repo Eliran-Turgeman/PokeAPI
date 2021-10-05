@@ -111,3 +111,21 @@ def delete_poke(name: str) -> None:
         cursor.execute('''
         DELETE FROM Pokemons WHERE name = ?''', (name,))
 
+
+def get_poke_by_stats_above(hp: int, attack: int, sattack: int,
+                             defense: int, sdefense: int) -> list:
+    params = [hp, attack, sattack, defense, sdefense]
+    params_names = ['hp', 'attack', 'special_attack', 'defense', 'special_defense']
+    
+    query = '''SELECT name, type1, type2, sum_stats,
+           hp, attack, special_attack, defense,
+           special_defense FROM Pokemons WHERE '''
+    for param, param_name in zip(params, params_names):
+        if param:
+            query += param_name + " > " + str(param) + " AND "
+
+    query = query[:-len(" AND ")]
+    
+    with PokeDatabase(DB_FILENAME) as cursor:
+        cursor.execute(query)
+        return cursor.fetchall()

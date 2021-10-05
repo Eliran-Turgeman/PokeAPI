@@ -9,7 +9,8 @@ from starlette.status import (
     HTTP_409_CONFLICT
 )
 from database import get_poke_by_name, get_poke_by_type, add_poke_to_db, \
-    update_poke, delete_poke, PokeDatabase
+    update_poke, delete_poke, PokeDatabase, get_poke_by_stats_above
+from api_utils import prepare_result, api_reply
 
 app = FastAPI()
 db = PokeDatabase()
@@ -40,21 +41,7 @@ def get_pokemon_by_name(pokemon_name: str = Path(None,
                                                              "like to "
                                                              "retrieve")):
     pokemon = get_poke_by_name(pokemon_name.lower())
-    if not pokemon:
-        return JSONResponse({'message': 'Pokemon Not Found'},
-                            status_code=HTTP_404_NOT_FOUND)
-
-    type2 = pokemon[2].capitalize() if pokemon[2] else pokemon[2]
-    result = {"Pokemon": pokemon[0].capitalize(),
-              "Types": [pokemon[1].capitalize(), type2],
-              "HP": pokemon[4],
-              "Attack": pokemon[5],
-              "Special Attack": pokemon[6],
-              "Defense": pokemon[7],
-              "Special Defense": pokemon[8],
-              }
-    return JSONResponse({'message': 'Pokemon Found',
-                         'data': result}, status_code=HTTP_200_OK)
+    return api_reply(pokemon)
 
 
 @app.get("/poketype/{poke_type}")
@@ -63,24 +50,22 @@ def get_pokemon_by_type(poke_type: str = Path(None,
                                                           "the pokemons you "
                                                           "want to query"),
                         type2: Optional[str] = None):
-    pokemons = get_poke_by_type(poke_type.lower(), type2.lower())
-    if not pokemons:
-        return JSONResponse({'message': 'Pokemon Not Found'},
-                            status_code=HTTP_404_NOT_FOUND)
-    result = {}
-    for idx, pokemon in enumerate(pokemons):
-        result[idx] = {"Pokemon": pokemon[0].capitalize(),
-                       "Types": [pokemon[1].capitalize(),
-                                 pokemon[2].capitalize()],
-                       "HP": pokemon[4],
-                       "Attack": pokemon[5],
-                       "Special Attack": pokemon[6],
-                       "Defense": pokemon[7],
-                       "Special Defense": pokemon[8],
-                       }
+    pokemons = get_poke_by_type(poke_type.lower(), type2.lower() if type2 else None)
+    return api_reply(pokemons)
 
-    return JSONResponse({'message': 'Pokemons Found',
-                         'data': result}, status_code=HTTP_200_OK)
+
+@app.get("/poke/above/")
+def get_pokemon_by_stats_above(hp: Optional[int] = None,
+                                attack: Optional[int] = None,
+                                sattack: Optional[int] = None,
+                                defense: Optional[int] = None,
+                                sdefense: Optional[int] = None):
+    params = [hp, attack, sattack, defense, sdefense]
+    if all(param is None for param in params):
+        return JSONResponse({'message': 'No parameters specified'},
+                            status_code=HTTP_404_NOT_FOUND)
+    pokemons = get_poke_by_stats_above(hp, attack, sattack, defense, sdefense)
+    return api_reply(pokemons)
 
 
 @app.post("/newPoke/{pokemon_name}")

@@ -112,17 +112,19 @@ def delete_poke(name: str) -> None:
         DELETE FROM Pokemons WHERE name = ?''', (name,))
 
 
-def get_poke_by_stats_above(hp: int, attack: int, sattack: int,
-                             defense: int, sdefense: int) -> list:
+def get_poke_by_stats_above_or_below(hp: int, attack: int, sattack: int,
+                             defense: int, sdefense: int, above: bool) -> list:
     params = [hp, attack, sattack, defense, sdefense]
     params_names = ['hp', 'attack', 'special_attack', 'defense', 'special_defense']
-    
+    operator = " > " if above else " < "
+
     query = '''SELECT name, type1, type2, sum_stats,
            hp, attack, special_attack, defense,
            special_defense FROM Pokemons WHERE '''
+           
     for param, param_name in zip(params, params_names):
         if param:
-            query += param_name + " > " + str(param) + " AND "
+            query += param_name + operator + str(param) + " AND "
 
     query = query[:-len(" AND ")]
     

@@ -9,8 +9,8 @@ from starlette.status import (
     HTTP_409_CONFLICT
 )
 from database import get_poke_by_name, get_poke_by_type, add_poke_to_db, \
-    update_poke, delete_poke, PokeDatabase, get_poke_by_stats_above
-from api_utils import prepare_result, api_reply
+    update_poke, delete_poke, PokeDatabase, get_poke_by_stats_above_or_below
+from api_utils import api_reply
 
 app = FastAPI()
 db = PokeDatabase()
@@ -64,7 +64,21 @@ def get_pokemon_by_stats_above(hp: Optional[int] = None,
     if all(param is None for param in params):
         return JSONResponse({'message': 'No parameters specified'},
                             status_code=HTTP_404_NOT_FOUND)
-    pokemons = get_poke_by_stats_above(hp, attack, sattack, defense, sdefense)
+    pokemons = get_poke_by_stats_above_or_below(hp, attack, sattack, defense, sdefense, above=True)
+    return api_reply(pokemons)
+
+
+@app.get("/poke/below/")
+def get_pokemon_by_stats_above(hp: Optional[int] = None,
+                                attack: Optional[int] = None,
+                                sattack: Optional[int] = None,
+                                defense: Optional[int] = None,
+                                sdefense: Optional[int] = None):
+    params = [hp, attack, sattack, defense, sdefense]
+    if all(param is None for param in params):
+        return JSONResponse({'message': 'No parameters specified'},
+                            status_code=HTTP_404_NOT_FOUND)
+    pokemons = get_poke_by_stats_above_or_below(hp, attack, sattack, defense, sdefense, above=False)
     return api_reply(pokemons)
 
 

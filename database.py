@@ -71,7 +71,9 @@ def get_poke_by_type(type1: str, type2: str = None) -> list:
 
         else:
             cursor.execute('''
-            SELECT * FROM Pokemons WHERE type1 = ?''', (type1,))
+            SELECT name, type1, type2, sum_stats,
+           hp, attack, special_attack, defense,
+           special_defense FROM Pokemons WHERE type1 = ?''', (type1,))
 
         return cursor.fetchall()
 
@@ -92,18 +94,19 @@ def update_poke(name: str, type1: str = None, type2: str = None,
                 sum_stats: int = None, hp: int = None, attack: int = None,
                 special_attack: int = None, defense: int = None,
                 special_defense: int = None) -> None:
-    with PokeDatabase(DB_FILENAME) as cursor:
-        params = [type1, type2, sum_stats, hp, attack, special_attack,
-                  defense, special_defense]
-        params_names = ['type1', 'type2', 'sum_stats', 'hp', 'attack',
-                        'special_attack', 'defense', 'special_defense']
 
+    params = [type1, type2, sum_stats, hp, attack, special_attack,
+                  defense, special_defense]
+    params_names = ['type1', 'type2', 'sum_stats', 'hp', 'attack',
+                    'special_attack', 'defense', 'special_defense']
+
+    with PokeDatabase(DB_FILENAME) as cursor:
         for param, param_name in zip(params, params_names):
             if param:
                 query = '''
                 UPDATE Pokemons SET ''' + param_name + '''
-                 = ? WHERE name = ?'''
-                cursor.execute(query, (param, name))
+                    = ? WHERE name = ?'''
+            cursor.execute(query, (param, name))
 
 
 def delete_poke(name: str) -> None:
@@ -121,7 +124,7 @@ def get_poke_by_stats_above_or_below(hp: int, attack: int, sattack: int,
     query = '''SELECT name, type1, type2, sum_stats,
            hp, attack, special_attack, defense,
            special_defense FROM Pokemons WHERE '''
-           
+
     for param, param_name in zip(params, params_names):
         if param:
             query += param_name + operator + str(param) + " AND "
